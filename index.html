@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Муравьиные Империи</title>
+    <style>
+        /* Базовые настройки экрана */
+        body { background-color: #121212; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; overflow-x: hidden; }
+        h1 { color: #ffa500; font-size: 24px; margin-bottom: 5px; }
+        p { color: #aaaaaa; font-size: 14px; }
+
+        /* 🎬 ЭКРАН ЗАГРУЗКИ И ЗАСТАВКИ (Полноэкранный блок) */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url('https://unsplash.com') no-repeat center center;
+            background-size: cover;
+            z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease;
+        }
+        #loading-screen h2 { color: #ffa500; font-size: 28px; margin-bottom: 10px; text-shadow: 2px 2px 4px black; }
+        
+        /* Анимированный муравей на загрузке */
+        .loading-ant { width: 80px; height: 80px; margin-bottom: 20px; }
+
+        /* Шкала загрузки */
+        .progress-bar-container { width: 70%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .progress-bar { width: 0%; height: 100%; background: #ffa500; transition: width 0.1s linear; }
+
+        /* 🐜 Сетка выбора фракций (скрыта во время загрузки) */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .card { background: #1e1e1e; border: 2px solid #333; border-radius: 12px; padding: 15px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .card:hover { border-color: #ffa500; background: #252525; }
+        .card h2 { font-size: 16px; margin: 0 0 5px 0; }
+        .card p { font-size: 11px; margin: 0; color: #bbbbbb; }
+        .card .badge { position: absolute; top: 5px; right: 5px; background: red; color: white; font-size: 9px; padding: 2px 5px; border-radius: 5px; font-weight: bold; }
+        .start-btn { display: block; width: 100%; margin-top: 25px; padding: 15px; background: #ffa500; border: none; color: black; font-weight: bold; font-size: 16px; border-radius: 8px; cursor: pointer; }
+        .selected { border-color: #ffa500 !important; background: #2a1f0a !important; }
+    </style>
+</head>
+<body>
+
+    <!-- 🎬 Экран заставки и загрузки -->
+    <div id="loading-screen">
+        <h2>ANT WAR: EVOLUTION</h2>
+        <!-- Заглушка гифки бегающего муравья -->
+        <img class="loading-ant" src="https://postimg.cc" alt="Загрузка...">
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="bar"></div>
+        </div>
+        <p style="color: #ffa500; margin-top: 10px; font-weight: bold;">Загрузка муравейника...</p>
+    </div>
+
+    <!-- 🐜 Основной контент (Выбор фракций) -->
+    <h1>🐜 ВЫБОР ФРАКЦИИ</h1>
+    <p>Выберите расу для старта великой войны за Оазис</p>
+
+    <div class="grid">
+        <div class="card" onclick="select(this, 'Черные муравьи 🐜')">
+            <h2>Черные муравьи 🐜</h2>
+            <p>🛡️ Защита > Атака<br>⚡ Много энергии<br>🧱 Быстрая стройка</p>
+        </div>
+        <div class="card" onclick="select(this, 'Огненные муравьи 🔥')">
+            <h2>Огненные муравьи 🔥</h2>
+            <p>⚔️ Высокая Атака<br>☣️ Сжигают урожай врага<br>🏥 90% в hospital</p>
+        </div>
+        <div class="card" onclick="select(this, 'Рабовладельцы 🔴')">
+            <h2>Рабовладельцы 🔴</h2>
+            <p>⚖️ Ср. параметры<br>👥 Угон 20% войск врага<br>🪫 Мало энергии</p>
+        </div>
+        <div class="card" onclick="select(this, 'Листорезы 🍃')">
+            <h2>Листорезы 🍃</h2>
+            <p>🛡️ Защита > Атака<br>🍄 Грибная ферма<br>💰 Монополия рынка</p>
+        </div>
+        <div class="card" onclick="select(this, 'Термиты 🧱')">
+            <h2>Термиты 🧱</h2>
+            <p>🛡️ Макс. защита<br>🕊️ Мирный фарм ресурсов<br>📈 +10% к защите</p>
+        </div>
+        <div class="card" onclick="select(this, 'Желтые сумасшедшие ⚡')">
+            <span class="badge">ДОНАТ</span>
+            <h2>Желтые ⚡</h2>
+            <p>⚔️ Топ атака/защита<br>☣️ Химический шок<br>🎒 Дебафф врага 70%</p>
+        </div>
+    </div>
+
+    <button class="start-btn" onclick="startGame()">🚀 НАЧАТЬ ЭВОЛЮЦИЮ</button>
+
+    <script src="https://telegram.org"></script>
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); 
+        let selectedFaction = "";
+
+        // Скрипт симуляции загрузки (3 секунды)
+        let width = 0;
+        let bar = document.getElementById("bar");
+        let interval = setInterval(function() {
+            if (width >= 100) {
+                clearInterval(interval);
+                // Плавно скрываем экран заставки
+                let screen = document.getElementById("loading-screen");
+                screen.style.opacity = 0;
+                setTimeout(() => screen.style.display = "none", 500);
+            } else {
+                width += 4; // Скорость заполнения полосы
+                bar.style.width = width + "%";
+            }
+        }, 100);
+
+        function select(element, faction) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedFaction = faction;
+        }
+
+        function startGame() {
+            if (!selectedFaction) { alert("Пожалуйста, выберите расу муравьев!"); return; }
+            tg.sendData(selectedFaction); 
+            tg.close(); 
+        }
+    </script>
+</body>
+</html>
